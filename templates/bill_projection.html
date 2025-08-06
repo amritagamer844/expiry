@@ -1,0 +1,411 @@
+{% extends "base.html" %} {% block title %}Future Bill Projection - Food Wastage
+Manager{% endblock %} {% block extra_css %}
+<style>
+  .invoice-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: white;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+  }
+
+  .invoice-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #eee;
+  }
+
+  .invoice-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 1rem;
+  }
+
+  .invoice-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    color: #0d6efd;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 1.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+  }
+
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+  }
+
+  .items-table th {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    text-align: left;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .items-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+  }
+
+  .items-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .nutrition-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    background-color: #e9ecef;
+  }
+
+  .nutrition-good {
+    background-color: #d1e7dd;
+    color: #0f5132;
+  }
+
+  .nutrition-warning {
+    background-color: #fff3cd;
+    color: #664d03;
+  }
+
+  .summary-section {
+    background: linear-gradient(135deg, #0061ff, #60efff);
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+  }
+
+  .total-row {
+    font-size: 1.25rem;
+    font-weight: 700;
+    border-top: 2px solid rgba(255, 255, 255, 0.2);
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+
+  .recommendations-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+  }
+
+  .print-button {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 1rem 2rem;
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .print-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  @media print {
+    .print-button {
+      display: none;
+    }
+    .invoice-container {
+      box-shadow: none;
+      margin: 0;
+      padding: 1rem;
+    }
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="invoice-container">
+  <div class="invoice-header">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <div class="invoice-title">Food Planning Invoice</div>
+        <p class="text-muted">Personalized nutrition and budget planning</p>
+      </div>
+      <div class="text-end">
+        <div class="h5">
+          Invoice #{{ "INV-%s"|format(range(10000, 99999)|random) }}
+        </div>
+        <div class="text-muted">{{ datetime.now().strftime('%B %d, %Y') }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">
+    <i class="bi bi-clock-history me-2"></i>Previous Purchases
+  </div>
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Category</th>
+        <th>Quantity</th>
+        <th>Nutritional Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set grouped_items = {} %} {% for item in items %} {% if
+      item.product_name not in grouped_items %} {% set _ =
+      grouped_items.update({ item.product_name: { 'item': item, 'count': 1,
+      'nutrition': item.get_nutrition_data() or {} } }) %} {% else %} {% set _ =
+      grouped_items[item.product_name].update({ 'count':
+      grouped_items[item.product_name]['count'] + 1 }) %} {% endif %} {% endfor
+      %} {% for product_name, data in grouped_items.items() %}
+      <tr>
+        <td>{{ data.item.product_name }}</td>
+        <td>{{ data.item.category }}</td>
+        <td>{{ data.count }}</td>
+        <td>
+          <span
+            class="nutrition-badge {% if data.nutrition.get('proteins', 0)|float > 10 %}nutrition-good{% endif %}"
+          >
+            Protein: {{ data.nutrition.get('proteins', 0) }}g
+          </span>
+          <span
+            class="nutrition-badge {% if data.nutrition.get('carbohydrates', 0)|float > 30 %}nutrition-warning{% endif %}"
+          >
+            Carbs: {{ data.nutrition.get('carbohydrates', 0) }}g
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="section-title">
+    <i class="bi bi-lightbulb me-2"></i>Recommended Items
+  </div>
+  {% if recommendations %}
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th>Recommended Item</th>
+        <th>Quantity (Weekly)</th>
+        <th>Nutritional Benefits</th>
+        <th>Storage Tips</th>
+        <th class="text-end">Price (₹)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in recommendations %}
+      <tr>
+        <td>{{ item.name }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ item.benefits }}</td>
+        <td>{{ item.storage }}</td>
+        <td class="text-end">₹{{ "%.2f"|format(item.price) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="alert alert-warning">
+    No recommendations available at the moment.
+  </div>
+  {% endif %}
+
+  <div class="summary-section">
+    <h3 class="mb-3">Weekly Summary</h3>
+    <div class="summary-row">
+      <span>Previous Purchases Subtotal:</span>
+      <span id="previous-subtotal">₹0.00</span>
+    </div>
+    <div class="summary-row">
+      <span>Recommended Items Subtotal:</span>
+      <span id="recommended-subtotal">₹0.00</span>
+    </div>
+    <div class="summary-row">
+      <span>Tax (20%):</span>
+      <span id="tax-amount">₹0.00</span>
+    </div>
+    <div class="summary-row total-row">
+      <span>Total Weekly Budget:</span>
+      <span id="total-amount">₹0.00</span>
+    </div>
+  </div>
+
+  <div class="recommendations-section">
+    <h4><i class="bi bi-graph-up me-2"></i>Nutritional Analysis</h4>
+    <div id="nutrition-analysis">
+      <!-- Quick overview charts -->
+      <div class="row">
+        <div class="col-md-6">
+          <canvas id="quickMacroChart"></canvas>
+        </div>
+        <div class="col-md-6">
+          <canvas id="quickCalorieChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="text-center mt-3">
+      <a href="{{ url_for('main.food_donation') }}" class="btn btn-success">
+        <i class="bi bi-heart-fill me-2"></i>Donate Excess Food
+      </a>
+    </div>
+  </div>
+</div>
+
+<button class="print-button" onclick="window.print()">
+  <i class="bi bi-printer me-2"></i>Print Invoice
+</button>
+
+<form action="{{ url_for('main.saved_items') }}" method="post">
+  {% endblock %} {% block extra_js %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    $(document).ready(function () {
+      const rawRecommendations = `{{ recommendations|tojson|safe }}`;
+      processRecommendations(rawRecommendations);
+      calculateTotals();
+
+      // Initialize quick overview charts
+      const macroCtx = document
+        .getElementById("quickMacroChart")
+        .getContext("2d");
+      new Chart(macroCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["Proteins", "Carbs", "Fats"],
+          datasets: [
+            {
+              data: [25, 55, 20],
+              backgroundColor: ["#36A2EB", "#FF6384", "#FFCE56"],
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: "Macronutrient Distribution",
+            },
+          },
+        },
+      });
+
+      const calorieCtx = document
+        .getElementById("quickCalorieChart")
+        .getContext("2d");
+      new Chart(calorieCtx, {
+        type: "bar",
+        data: {
+          labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+          datasets: [
+            {
+              label: "Calories",
+              data: [2100, 1950, 2200, 2000, 1800, 2300, 2150],
+              backgroundColor: "#4BC0C0",
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: "Weekly Calorie Intake",
+            },
+          },
+        },
+      });
+    });
+
+    function processRecommendations(rawText) {
+      try {
+        let recommendationsTableHtml = `
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Recommended Item</th>
+              <th>Quantity (Weekly)</th>
+              <th>Nutritional Benefits</th>
+              <th>Storage Tips</th>
+              <th class="text-end">Price (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+        `;
+
+        const recommendations = JSON.parse(rawText);
+        let weeklyCost = 0;
+
+        recommendations.forEach((item) => {
+          recommendationsTableHtml += `
+            <tr>
+              <td>${item.name}</td>
+              <td>${item.quantity}</td>
+              <td>${item.benefits || ""}</td>
+              <td>${item.storage || ""}</td>
+              <td class="text-end">₹${parseFloat(item.price).toFixed(2)}</td>
+            </tr>
+          `;
+          weeklyCost += parseFloat(item.price);
+        });
+
+        recommendationsTableHtml += "</tbody></table>";
+        $("#recommendations-table").html(recommendationsTableHtml);
+
+        // Update the weekly cost in the summary section
+        $("#recommended-subtotal").text(`₹${weeklyCost.toFixed(2)}`);
+        calculateTotals();
+      } catch (error) {
+        console.error("Error processing recommendations:", error);
+        $("#recommendations-table").html(
+          '<div class="alert alert-warning">No recommendations available at the moment.</div>'
+        );
+      }
+    }
+
+    function calculateTotals() {
+      let recommendedTotal = 0;
+
+      // Calculate recommended items total
+      $("#recommendations-table tbody tr").each(function () {
+        const priceText = $(this).find("td:last").text();
+        const price = parseFloat(priceText.replace("₹", "")) || 0;
+        recommendedTotal += price;
+      });
+
+      const subtotal = recommendedTotal;
+      const tax = subtotal * 0.2;
+      const total = subtotal + tax;
+
+      // Update summary section with Rupee symbol
+      $("#previous-subtotal").text("₹0.00");
+      $("#recommended-subtotal").text("₹" + recommendedTotal.toFixed(2));
+      $("#tax-amount").text("₹" + tax.toFixed(2));
+      $("#total-amount").text("₹" + total.toFixed(2));
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  {% endblock %}
+</form>

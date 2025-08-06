@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}Food Charity Map - Food Wastage Manager{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css" type="text/css">
+<style>
+    #map {
+        height: 500px;
+        width: 100%;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .charity-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 15px;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .charity-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .charity-name {
+        font-weight: 600;
+        color: #0d6efd;
+    }
+
+    .loading-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+
+    .error-message {
+        color: #dc3545;
+        padding: 1rem;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="bi bi-heart-fill text-danger me-2"></i> Food Donation & Charity Locations</h2>
+                <a href="{{ url_for('main.saved_items') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left me-2"></i> Back to Items
+                </a>
+            </div>
+            <p class="text-muted">Find nearby food banks, charities and NGOs where you can donate your excess food to
+                help those in need</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div id="map" class="mb-4"></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Nearby Food Charities</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="charity-list" class="list-group list-group-flush">
+                        <div class="loading-indicator">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Finding nearby charities...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
+<script>
+    let map;
+    let markers = [];
+
+    function initMap() {
+        // Initialize map with default center
+        map = new atlas.Map('map', {
+            center: [0, 0], // Will be updated with user location
+            zoom: 12,
+            authOptions: {
+                authType: 'subscriptionKey',
+                subscriptionKey: '{{ azure_maps_key }}'
+            },
+            style: "road"  // Use road style for better visibility
+        });
+
+        // Wait until the map resources are ready
+        map.events.add('ready', function () {
+            // Try to get user's location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+
+                        // Center map on user location
+                        map.setCamera({
+                            center: [userLocation.lng, userLocation.lat],
+                            zoom: 12
+                        });
+
+                        // Add marker for user location
+                        const userMarker = new atlas.HtmlMarker({
+                            position: [userLocation.lng, userLocation.lat],
+                            htmlContent: '<div style="background-color:#4287f5;width:20px;height:20px;border-radius:50%;border:2px solid white;"></div>'
+                        });
+                        map.markers.add(userMarker);
+
+                        // Find nearby food charities
+                        findNearbyCharities(userLocation.lat, userLocation.lng);
+                    },
+                    (error) => {
+                        // Handle location error
+                        console.error("Geolocation error:", error);
+                        document.getElementById('charity-list').innerHTML =
+                            '<div class="p-4 text-center">' +
+                            '<i class="bi bi-geo-alt-fill text-danger" style="font-size: 2rem;"></i>' +
+                            '<p class="mt-2">Location access denied. Please enable location services to find nearby charities.</p>' +
+                            '</div>';
+                    },
+                    { timeout: 10000 } // 10 second timeout
+                );
+            } else {
+                // Browser doesn't support geolocation
+                document.getElementById('charity-list').innerHTML =
+                    '<div class="p-4 text-center">' +
+                    '<i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 2rem;"></i>' +
+                    '<p class="mt-2">Your browser doesn\'t support geolocation.</p>' +
+                    '</div>';
+            }
+        });
+    }
+
+    function findNearbyCharities(lat, lng) {
+        // More comprehensive query for various charity types
+        const query = 'food bank food pantry food charity NGO donation center orphanage oldage home shelter';
+        const radius = 20000; // Increased to 20km for better coverage
+
+        // Add a timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Request timed out')), 15000)
+        );
+
+        // Use a more direct approach with fetch API
+        const url = `https://atlas.microsoft.com/search/poi/json?api-version=1.0&query=${query}&lat=${lat}&lon=${lng}&radius=${radius}&limit=50&subscription-key={{ azure_maps_key }}`;
+
+        Promise.race([
+            fetch(url),
+            timeoutPromise
+        ])
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("API Response:", data);
+
+                // If no results found with first query, try a more generic query
+                if (!data.results || data.results.length === 0) {
+                    const fallbackQuery = 'charity NGO nonprofit organization';
+                    const fallbackUrl = `https://atlas.microsoft.com/search/poi/json?api-version=1.0&query=${fallbackQuery}&lat=${lat}&lon=${lng}&radius=${radius}&limit=50&subscription-key={{ azure_maps_key }}`;
+
+                    return fetch(fallbackUrl)
+                        .then(response => response.json())
+                        .then(processResults)
+                        .catch(handleError);
+                } else {
+                    processResults(data);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('charity-list').innerHTML =
+                    `<div class="p-4 text-center">
+                    <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 2rem;"></i>
+                    <p class="mt-2">Error finding charities: ${error.message}. Please try again later.</p>
+                    <button class="btn btn-primary mt-2" onclick="window.location.reload()">Retry</button>
+                </div>`;
+            });
+    }
+
+    function processResults(data) {
+        if (!data.results || data.results.length === 0) {
+            document.getElementById('charity-list').innerHTML =
+                `<div class="p-4 text-center">
+                    <i class="bi bi-search text-muted" style="font-size: 2rem;"></i>
+                    <p class="mt-2">No food charities found nearby. Try increasing the search radius.</p>
+                </div>`;
+            return;
+        }
+
+        const charities = data.results;
+        let bounds = [];
+        let listHTML = '';
+
+        // Clear existing markers
+        if (map.markers) {
+            map.markers.clear();
+        }
+
+        // Create a data source and add it to the map
+        const dataSource = new atlas.source.DataSource();
+        map.sources.add(dataSource);
+
+        // Create a point feature collection
+        let points = [];
+
+        // Add markers and list items
+        charities.forEach((charity, index) => {
+            const position = [charity.position.lon, charity.position.lat];
+            bounds.push(position);
+
+            // Extract phone number if available
+            const phone = charity.poi && charity.poi.phone ? charity.poi.phone : 'No phone available';
+            const name = charity.poi && charity.poi.name ? charity.poi.name : 'Unnamed Charity';
+            const address = charity.address && charity.address.freeformAddress ? charity.address.freeformAddress : 'Address not available';
+            const categories = charity.poi && charity.poi.categories ? charity.poi.categories.join(', ') : 'Food Charity';
+
+            // Create a point feature
+            const point = new atlas.data.Feature(new atlas.data.Point(position), {
+                name: name,
+                address: address,
+                phone: phone,
+                categories: categories,
+                index: index
+            });
+
+            points.push(point);
+
+            // Create list item with phone number
+            listHTML += `
+                <div class="charity-card p-3" data-index="${index}">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3 bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px; flex-shrink: 0;">
+                            ${index + 1}
+                        </div>
+                        <div>
+                            <div class="charity-name">${name}</div>
+                            <div class="small text-muted">${address}</div>
+                            <div class="small"><i class="bi bi-telephone"></i> <a href="tel:${phone}">${phone}</a></div>
+                            <div class="small mt-1"><span class="badge bg-info">${categories.split(',')[0]}</span></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Add all points to the data source
+        dataSource.add(points);
+
+        // Create a symbol layer to render the points
+        const symbolLayer = new atlas.layer.SymbolLayer(dataSource, null, {
+            iconOptions: {
+                image: 'pin-round-blue',
+                anchor: 'center',
+                allowOverlap: true
+            },
+            textOptions: {
+                offset: [0, 1]
+            }
+        });
+
+        map.layers.add(symbolLayer);
+
+        // Add a popup to the map
+        const popup = new atlas.Popup({
+            pixelOffset: [0, -30],
+            closeButton: true
+        });
+
+        // Add a click event to the symbol layer
+        map.events.add('click', symbolLayer, (e) => {
+            // Check if a feature was clicked
+            if (e.shapes && e.shapes.length > 0) {
+                const properties = e.shapes[0].getProperties();
+
+                // Create popup content
+                const content = `
+                    <div style="padding:10px">
+                        <h5>${properties.name}</h5>
+                        <p>${properties.address}</p>
+                        <p><i class="bi bi-telephone"></i> <a href="tel:${properties.phone}">${properties.phone}</a></p>
+                        <p><strong>Type:</strong> ${properties.categories}</p>
+                        <button class="btn btn-sm btn-primary mt-2" onclick="window.open('<https://www.google.com/maps/dir/?api=1&destination=${e.position > [1]},${e.position[0]}', '_blank')">Get Directions</button>
+                    </div>
+                `;
+
+                // Set the popup content and position
+                popup.setOptions({
+                    content: content,
+                    position: e.position
+                });
+
+                // Open the popup
+                popup.open(map);
+            }
+        });
+
+        document.getElementById('charity-list').innerHTML = listHTML;
+
+        // Set camera to show all markers
+        if (bounds.length > 0) {
+            map.setCamera({
+                bounds: atlas.data.BoundingBox.fromPositions(bounds),
+                padding: 50
+            });
+        }
+
+        // Add click listeners to list items
+        document.querySelectorAll('.charity-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const index = parseInt(card.dataset.index);
+                const feature = points[index];
+
+                if (feature) {
+                    const position = feature.geometry.coordinates;
+
+                    // Create popup content
+                    const properties = feature.properties;
+                    const content = `
+                        <div style="padding:10px">
+                            <h5>${properties.name}</h5>
+                            <p>${properties.address}</p>
+                            <p><i class="bi bi-telephone"></i> <a href="tel:${properties.phone}">${properties.phone}</a></p>
+                            <p><strong>Type:</strong> ${properties.categories}</p>
+                            <button class="btn btn-sm btn-primary mt-2" onclick="window.open('<https://www.google.com/maps/dir/?api=1&destination=${position > [1]},${position[0]}', '_blank')">Get Directions</button>
+                        </div>
+                    `;
+
+                    // Set the popup content and position
+                    popup.setOptions({
+                        content: content,
+                        position: position
+                    });
+
+                    // Open the popup
+                    popup.open(map);
+
+                    // Center the map on the selected charity
+                    map.setCamera({
+                        center: position,
+                        zoom: 15
+                    });
+                }
+            });
+        });
+    }
+
+    function handleError(error) {
+        console.error('Error:', error);
+        document.getElementById('charity-list').innerHTML =
+            `<div class="p-4 text-center">
+                <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 2rem;"></i>
+                <p class="mt-2">Error finding food charities. Please try again later.</p>
+                <button class="btn btn-primary mt-2" onclick="window.location.reload()">Retry</button>
+            </div>`;
+    }
+
+    // Initialize map when page loads
+    window.onload = initMap;
+</script>
+{% endblock %}

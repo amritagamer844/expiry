@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Add Food Item - Food Wastage Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">Add New Food Item</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="food-item-form">
+                    {{ form.hidden_tag() }}
+
+                    <!-- Expiry Image Upload -->
+                    <div class="mb-3">
+                        <label for="{{ form.expiry_image.id }}" class="form-label">Expiry Date Image</label>
+                        <div class="input-group">
+                            {{ form.expiry_image(class="form-control", id="expiry_image") }}
+                            <button type="button" class="btn btn-secondary" id="process-expiry-btn">Process</button>
+                            <button type="button" class="btn btn-primary" id="capture-expiry-btn">
+                                <i class="bi bi-camera"></i> Capture
+                            </button>
+                        </div>
+                        <small class="form-text text-muted">Upload or capture an image of the expiry date label</small>
+                    </div>
+
+                    <!-- Barcode Image Upload -->
+                    <div class="mb-3">
+                        <label for="{{ form.barcode_image.id }}" class="form-label">Barcode Image</label>
+                        <div class="input-group">
+                            {{ form.barcode_image(class="form-control", id="barcode_image") }}
+                            <button type="button" class="btn btn-secondary" id="process-barcode-btn">Process</button>
+                            <button type="button" class="btn btn-primary" id="capture-barcode-btn">
+                                <i class="bi bi-camera"></i> Capture
+                            </button>
+                        </div>
+                        <small class="form-text text-muted">Upload or capture an image of the product barcode</small>
+                    </div>
+
+                    <!-- Product Name -->
+                    <div class="mb-3">
+                        <label for="{{ form.product_name.id }}" class="form-label">Product Name</label>
+                        <div class="input-group">
+                            {{ form.product_name(class="form-control", id="product_name") }}
+                            <button type="button" class="btn btn-secondary voice">Voice</button>
+                        </div>
+                    </div>
+
+                    <!-- Expiry Date -->
+                    <div class="mb-3">
+                        <label for="{{ form.expiry_date.id }}" class="form-label">Expiry Date</label>
+                        <div class="input-group">
+                            {{ form.expiry_date(class="form-control", id="expiry_date", type="date") }}
+                        </div>
+                        <div id="expiry-status" class="mt-2"></div>
+                    </div>
+
+                    <!-- Barcode -->
+                    <div class="mb-3">
+                        <label for="{{ form.barcode.id }}" class="form-label">Barcode</label>
+                        <div class="input-group">
+                            {{ form.barcode(class="form-control", id="barcode") }}
+                        </div>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="mb-3">
+                        <label for="{{ form.category.id }}" class="form-label">Food Category</label>
+                        <div class="input-group">
+                            {{ form.category(class="form-control", id="category") }}
+                            <button type="button" class="btn btn-secondary voice">Voice</button>
+                            <button type="button" class="btn btn-info" id="storage-tips-btn">Storage Tips</button>
+                        </div>
+                    </div>
+
+                    <!-- Alert Days -->
+                    <div class="mb-3">
+                        <label for="{{ form.alert_days.id }}" class="form-label">Alert Days Before Expiry</label>
+                        <div class="input-group">
+                            {{ form.alert_days(class="form-control", id="alert_days", type="number", min="1", max="30")
+                            }}
+                            <button type="button" class="btn btn-secondary voice">Voice</button>
+                        </div>
+                        <small class="form-text text-muted">You'll receive an email alert this many days before
+                            expiry</small>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="mb-3">
+                        <label for="{{ form.email.id }}" class="form-label">Email for Alerts</label>
+                        <div class="input-group">
+                            {{ form.email(class="form-control", id="email", type="email") }}
+                            <button type="button" class="btn btn-secondary voice">Voice</button>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Storage Tips Modal -->
+<div class="modal fade" id="storageTipsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Storage Tips</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="storage-tips-content"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Capture Modal -->
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Camera Capture</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="camera-container">
+                    <video id="camera-video" autoplay playsinline></video>
+                    <canvas id="camera-canvas" style="display: none;"></canvas>
+                    <img id="camera-preview" style="display: none;" class="img-fluid">
+                </div>
+                <div class="d-grid gap-2 mt-3">
+                    <button type="button" class="btn btn-primary" id="take-photo-btn">
+                        <i class="bi bi-camera"></i> Take Photo
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="use-photo-btn" style="display: none;">Use
+                    Photo</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function () {
+
+        // Process Expiry Image
+        $('#process-expiry-btn').click(function () {
+            const fileInput = document.getElementById('expiry_image');
+            if (!fileInput || fileInput.files.length === 0) {
+                alert('Please select an image first.');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('image', fileInput.files[0]);
+
+            $.ajax({
+                url: '/process_expiry_image',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    if (response.success) {
+                        $('#expiry_date').val(response.date);
+                        let statusHtml = response.expired
+                            ? '<div class="alert alert-danger">This product is expired!</div>'
+                            : `<div class="alert alert-success">This product will expire in ${response.days_remaining} days.</div>`;
+                        $('#expiry-status').html(statusHtml);
+                    } else {
+                        alert('Could not extract expiry date from the image. Please enter it manually.');
+                    }
+                },
+                error: function () {
+                    alert('Error processing the image. Please try again or enter the date manually.');
+                }
+            });
+        });
+
+        // Process Barcode Image
+        $('#process-barcode-btn').click(function () {
+            const fileInput = document.getElementById('barcode_image');
+            if (!fileInput || fileInput.files.length === 0) {
+                alert('Please select an image first.');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('image', fileInput.files[0]);
+
+            $.ajax({
+                url: '/process_barcode_image',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    if (response.success) {
+                        $('#barcode').val(response.barcode);
+                        if (response.product_name) {
+                            $('#product_name').val(response.product_name);
+                        }
+                    } else {
+                        alert('Could not extract barcode from the image. Please enter it manually.');
+                    }
+                },
+                error: function () {
+                    alert('Error processing the image. Please try again or enter the barcode manually.');
+                }
+            });
+        });
+
+        // Show Storage Tips
+        $('#storage-tips-btn').click(function () {
+            const category = $('#category').val();
+            if (!category) {
+                alert('Please select a food category first.');
+                return;
+            }
+
+            $.ajax({
+                url: '/get_storage_tips/' + encodeURIComponent(category),
+                type: 'GET',
+                success: function (response) {
+                    let tipsHtml = `<h4>${category}</h4><hr>`;
+                    for (const [location, tip] of Object.entries(response)) {
+                        tipsHtml += `<h5>${location}</h5><p>${tip}</p>`;
+                    }
+                    $('#storage-tips-content').html(tipsHtml);
+                    $('#storageTipsModal').modal('show');
+                },
+                error: function () {
+                    alert('Error loading storage tips. Please try again.');
+                }
+            });
+        });
+
+    });
+</script>
+{% endblock %}

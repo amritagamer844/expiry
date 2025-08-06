@@ -1,0 +1,26 @@
+<div class="recipe-suggestions">
+    {% if recipes %}
+    <div class="row">
+        {% for recipe in recipes %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                {% if recipe.image %}
+                <img src="{{ recipe.image }}" class="card-img-top" alt="{{ recipe.title }}">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ recipe.title }}</h5>
+                    <p class="card-text">
+                        <span class="badge bg-success">{{ recipe.usedIngredientCount }} used ingredients</span>
+                        <span class="badge bg-warning text-dark">{{ recipe.missedIngredientCount }} missing
+                            ingredients</span>
+                        <span class="badge bg-info">{{ recipe.likes }} likes</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">No recipes found for this item.</div>
+    {% endif %}
+</div>

@@ -1,0 +1,76 @@
+<div class="nutrition-info">
+    <div class="row">
+        <div class="col-md-4">
+            {% if nutrition.product_image %}
+            <img src="{{ nutrition.product_image }}" class="img-fluid mb-3" alt="{{ nutrition.product_name }}">
+            {% endif %}
+        </div>
+        <div class="col-md-8">
+            <h4>{{ nutrition.product_name }}</h4>
+            <p><strong>Barcode:</strong> {{ nutrition.barcode }}</p>
+
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Nutrient</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Energy</td>
+                        <td>{{ nutrition.energy_kcal }} kcal</td>
+                    </tr>
+                    <tr>
+                        <td>Fat</td>
+                        <td>{{ nutrition.fat }} g</td>
+                    </tr>
+                    <tr>
+                        <td>Saturated Fat</td>
+                        <td>{{ nutrition.saturated_fat }} g</td>
+                    </tr>
+                    <tr>
+                        <td>Carbohydrates</td>
+                        <td>{{ nutrition.carbohydrates }} g</td>
+                    </tr>
+                    <tr>
+                        <td>Sugars</td>
+                        <td>{{ nutrition.sugars }} g</td>
+                    </tr>
+                    <tr>
+                        <td>Fiber</td>
+                        <td>{{ nutrition.fiber }} g</td>
+                    </tr>
+                    <tr>
+                        <td>Proteins</td>
+                        <td>{{ nutrition.proteins }} g</td>
+                    </tr>
+                    <tr>
+                        <td>Salt</td>
+                        <td>{{ nutrition.salt }} g</td>
+                    </tr>
+                    <tr>
+                        <td>Sodium</td>
+                        <td>{{ nutrition.sodium }} g</td>
+                    </tr>
+                    <tr>
+                        <td>Calcium</td>
+                        <td>{{ nutrition.calcium }}</td>
+                    </tr>
+                    <tr>
+                        <td>Iron</td>
+                        <td>{{ nutrition.iron }}</td>
+                    </tr>
+                    <tr>
+                        <td>Vitamin A</td>
+                        <td>{{ nutrition.vitamin_a }}</td>
+                    </tr>
+                    <tr>
+                        <td>Vitamin C</td>
+                        <td>{{ nutrition.vitamin_c }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,298 @@
+{% extends "base.html" %} {% block title %}Saved Items - Food Wastage Manager{%
+endblock %} {% block content %}
+<div class="card">
+  <div class="card-header bg-primary text-white">
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="mb-0">Your Saved Food Items</h2>
+      <div>
+        <a
+          href="{{ url_for('main.bill_projection') }}"
+          class="btn btn-info me-2"
+        >
+          <i class="bi bi-calculator me-2"></i> Future Bill Projection
+        </a>
+        <button id="donate-btn" class="btn btn-success">
+          <i class="bi bi-heart-fill me-2"></i> Donate Food
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="card-body">
+    {% if items %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th>Expiry Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr
+            class="{% if item.is_expired() %}table-danger{% elif item.days_until_expiry() <= item.alert_days %}table-warning{% endif %}"
+          >
+            <td>{{ item.product_name }}</td>
+            <td>{{ item.category }}</td>
+            <td>{{ item.expiry_date.strftime('%Y-%m-%d') }}</td>
+            <td>
+              {% if item.is_expired() %}
+              <span class="badge bg-danger">Expired</span>
+              {% elif item.days_until_expiry() <= item.alert_days %}
+              <span class="badge bg-warning text-dark"
+                >Expires in {{ item.days_until_expiry() }} days</span
+              >
+              {% else %}
+              <span class="badge bg-success"
+                >{{ item.days_until_expiry() }} days left</span
+              >
+              {% endif %}
+            </td>
+            <td>
+              <div class="btn-group" role="group">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-info nutrition-btn"
+                  data-id="{{ item.id }}"
+                >
+                  Nutrition
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-success recipe-btn"
+                  data-id="{{ item.id }}"
+                >
+                  Recipes
+                </button>
+                <form
+                  method="POST"
+                  action="{{ url_for('main.delete_item', item_id=item.id) }}"
+                  class="d-inline"
+                  onsubmit="return confirm('Are you sure you want to delete this item?');"
+                >
+                  <button type="submit" class="btn btn-sm btn-danger">
+                    Delete
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+      <p>You don't have any saved food items yet.</p>
+      <a href="{{ url_for('main.index') }}" class="btn btn-primary"
+        >Add Food Item</a
+      >
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Nutrition Modal -->
+<div class="modal fade" id="nutritionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">Nutrition Information</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body" id="nutrition-content">
+        <!-- Nutrition info will be loaded here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recipe Modal -->
+<div class="modal fade" id="recipeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">Recipe Suggestions</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body" id="recipe-content">
+        <!-- Recipes will be loaded here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  $(document).ready(function () {
+    // Show nutrition information
+    $(".nutrition-btn").click(function () {
+      const itemId = $(this).data("id");
+
+      $.ajax({
+        url: "/get_nutrition/" + itemId,
+        type: "GET",
+        success: function (response) {
+          if (response.error) {
+            $("#nutrition-content").html(
+              `<div class="alert alert-danger">${response.error}</div>`
+            );
+          } else {
+            let nutritionHtml = `
+                            <div class="row">
+                                <div class="col-md-4">
+                                    ${
+                                      response.product_image
+                                        ? `<img src="${response.product_image}" class="img-fluid mb-3" alt="${response.product_name}">`
+                                        : ""
+                                    }
+                                </div>
+                                <div class="col-md-8">
+                                    <h4>${response.product_name}</h4>
+                                    <p><strong>Barcode:</strong> ${
+                                      response.barcode
+                                    }</p>
+                                    
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Nutrient</th>
+                                                <th>Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Energy</td>
+                                                <td>${
+                                                  response.energy_kcal
+                                                } kcal</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Fat</td>
+                                                <td>${response.fat} g</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Carbohydrates</td>
+                                                <td>${
+                                                  response.carbohydrates
+                                                } g</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Proteins</td>
+                                                <td>${response.proteins} g</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Salt</td>
+                                                <td>${response.salt} g</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+
+            $("#nutrition-content").html(nutritionHtml);
+          }
+
+          $("#nutritionModal").modal("show");
+        },
+        error: function () {
+          $("#nutrition-content").html(
+            '<div class="alert alert-danger">Error loading nutrition information. Please try again.</div>'
+          );
+          $("#nutritionModal").modal("show");
+        },
+      });
+    });
+
+    // Show recipe suggestions
+    $(".recipe-btn").click(function () {
+      const itemId = $(this).data("id");
+
+      $.ajax({
+        url: "/get_recipes/" + itemId,
+        type: "GET",
+        success: function (response) {
+          if (response.error) {
+            $("#recipe-content").html(
+              `<div class="alert alert-danger">${response.error}</div>`
+            );
+          } else if (response.length === 0) {
+            $("#recipe-content").html(
+              '<div class="alert alert-info">No recipes found for this item.</div>'
+            );
+          } else {
+            let recipesHtml = '<div class="row">';
+
+            response.forEach((recipe) => {
+              recipesHtml += `
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        ${
+                          recipe.image
+                            ? `<img src="${recipe.image}" class="card-img-top" alt="${recipe.title}">`
+                            : ""
+                        }
+                        <div class="card-body">
+                            <h5 class="card-title">${recipe.title}</h5>
+                            <p class="card-text">
+                                <span class="badge bg-success">${
+                                  recipe.usedIngredientCount
+                                } used ingredients</span>
+                                <span class="badge bg-warning text-dark">${
+                                  recipe.missedIngredientCount
+                                } missing ingredients</span>
+                                <span class="badge bg-info">${
+                                  recipe.likes
+                                } likes</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+              `;
+            });
+
+            recipesHtml += "</div>";
+            $("#recipe-content").html(recipesHtml);
+          }
+
+          $("#recipeModal").modal("show");
+        },
+        error: function () {
+          $("#recipe-content").html(
+            '<div class="alert alert-danger">Error loading recipes. Please try again.</div>'
+          );
+          $("#recipeModal").modal("show");
+        },
+      });
+    });
+
+    // Handle donate button click
+    $("#donate-btn").click(function () {
+      window.location.href = "{{ url_for('main.charity_map') }}";
+    });
+  });
+</script>
+{% endblock %}

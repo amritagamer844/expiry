@@ -1,0 +1,379 @@
+{% extends "base.html" %} {% block title %}Nutritional Analysis - Food Wastage
+Manager{% endblock %} {% block extra_css %}
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/cal-heatmap/dist/cal-heatmap.css"
+/>
+<style>
+  .chart-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .chart-wrapper {
+    min-height: 300px;
+    position: relative;
+  }
+  .chart-title {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    color: #333;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Nutritional Analysis</h1>
+    <a href="{{ url_for('bill_projection') }}" class="btn btn-secondary mb-3">
+      <i class="bi bi-arrow-left me-2"></i>Back to Bill
+    </a>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="chart-container">
+        <h3 class="chart-title">Macronutrient Distribution</h3>
+        <div class="chart-wrapper">
+          <canvas id="macronutrientPieChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="chart-container">
+        <h3 class="chart-title">Nutrient Comparison</h3>
+        <div class="chart-wrapper">
+          <canvas id="nutrientBarChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="chart-container">
+        <h3 class="chart-title">Weekly Calorie Trend</h3>
+        <div class="chart-wrapper">
+          <canvas id="calorieLineChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="chart-container">
+        <h3 class="chart-title">Nutrient Profile</h3>
+        <div class="chart-wrapper">
+          <canvas id="nutrientRadarChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="chart-container">
+        <h3 class="chart-title">Daily Meal Distribution</h3>
+        <div class="chart-wrapper">
+          <canvas id="mealStackedBar"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="chart-container">
+        <h3 class="chart-title">Food Group Contribution</h3>
+        <div class="chart-wrapper">
+          <canvas id="contributionDoughnut"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="chart-container">
+        <h3 class="chart-title">Nutrient Density Heatmap</h3>
+        <div class="chart-wrapper">
+          <canvas id="nutrientHeatmap"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="chart-container">
+        <h3 class="chart-title">Monthly Consumption Calendar</h3>
+        <div class="chart-wrapper">
+          <div id="calendarHeatmap"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-container mt-4">
+    <h3 class="chart-title">AI-Generated Recipe Recommendations</h3>
+    <div id="recipeContainer"></div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cal-heatmap/dist/cal-heatmap.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize all charts
+    initializeMacronutrientChart();
+    initializeNutrientBarChart();
+    initializeCalorieLineChart();
+    initializeNutrientRadarChart();
+    initializeMealStackedBar();
+    initializeContributionDoughnut();
+    initializeNutrientHeatmap();
+    initializeCalendarHeatmap();
+    generateAIRecipes();
+  });
+
+  function initializeMacronutrientChart() {
+    const ctx = document
+      .getElementById("macronutrientPieChart")
+      .getContext("2d");
+    new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: ["Carbohydrates", "Proteins", "Fats"],
+        datasets: [
+          {
+            data: [55, 25, 20],
+            backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56"],
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+      },
+    });
+  }
+
+  function initializeNutrientBarChart() {
+    const ctx = document.getElementById("nutrientBarChart").getContext("2d");
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: ["Protein", "Fiber", "Iron", "Calcium", "Vitamin C"],
+        datasets: [
+          {
+            label: "Amount (g/mg)",
+            data: [25, 15, 8, 300, 45],
+            backgroundColor: "#36A2EB",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true },
+        },
+      },
+    });
+  }
+
+  function initializeCalorieLineChart() {
+    const ctx = document.getElementById("calorieLineChart").getContext("2d");
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        datasets: [
+          {
+            label: "Calories",
+            data: [2100, 1950, 2200, 2000, 1800, 2300, 2150],
+            borderColor: "#FF6384",
+            tension: 0.1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+      },
+    });
+  }
+
+  function initializeNutrientRadarChart() {
+    const ctx = document.getElementById("nutrientRadarChart").getContext("2d");
+    new Chart(ctx, {
+      type: "radar",
+      data: {
+        labels: ["Protein", "Carbs", "Fats", "Fiber", "Vitamins", "Minerals"],
+        datasets: [
+          {
+            label: "Current",
+            data: [80, 65, 70, 75, 60, 85],
+            backgroundColor: "rgba(54, 162, 235, 0.2)",
+            borderColor: "#36A2EB",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+      },
+    });
+  }
+
+  function initializeMealStackedBar() {
+    const ctx = document.getElementById("mealStackedBar").getContext("2d");
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: ["Breakfast", "Lunch", "Dinner", "Snacks"],
+        datasets: [
+          {
+            label: "Proteins",
+            data: [15, 25, 20, 5],
+            backgroundColor: "#FF6384",
+          },
+          {
+            label: "Carbs",
+            data: [30, 45, 35, 15],
+            backgroundColor: "#36A2EB",
+          },
+          {
+            label: "Fats",
+            data: [10, 15, 12, 8],
+            backgroundColor: "#FFCE56",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true },
+        },
+      },
+    });
+  }
+
+  function initializeContributionDoughnut() {
+    const ctx = document
+      .getElementById("contributionDoughnut")
+      .getContext("2d");
+    new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: ["Grains", "Vegetables", "Proteins", "Dairy", "Fruits"],
+        datasets: [
+          {
+            data: [30, 25, 20, 15, 10],
+            backgroundColor: [
+              "#FF6384",
+              "#36A2EB",
+              "#FFCE56",
+              "#4BC0C0",
+              "#9966FF",
+            ],
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+      },
+    });
+  }
+
+  function initializeNutrientHeatmap() {
+    const ctx = document.getElementById("nutrientHeatmap").getContext("2d");
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+        datasets: [
+          {
+            label: "Protein",
+            data: [65, 75, 70, 80, 85],
+            backgroundColor: "#FF6384",
+          },
+          {
+            label: "Carbs",
+            data: [80, 75, 70, 65, 60],
+            backgroundColor: "#36A2EB",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true },
+        },
+      },
+    });
+  }
+
+  function initializeCalendarHeatmap() {
+    const cal = new CalHeatmap();
+    cal.init({
+      itemSelector: "#calendarHeatmap",
+      domain: "month",
+      subDomain: "day",
+      data: generateSampleData(),
+      start: new Date(),
+      cellSize: 10,
+      range: 1,
+      legend: [1000, 2000, 3000],
+    });
+  }
+
+  function generateSampleData() {
+    const data = {};
+    const now = new Date();
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      data[date.getTime() / 1000] = Math.floor(Math.random() * 2000) + 1000;
+    }
+    return data;
+  }
+
+  function generateAIRecipes() {
+    const recipeContainer = document.getElementById("recipeContainer");
+    recipeContainer.innerHTML =
+      '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
+
+    fetch("/api/generate-recipe", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        displayRecipe(data.recipe);
+      })
+      .catch((error) => {
+        recipeContainer.innerHTML = `
+      <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        ${error.message || "Failed to generate recipe. Please try again later."}
+      </div>
+    `;
+      });
+  }
+
+  function displayRecipe(recipeText) {
+    const recipeContainer = document.getElementById("recipeContainer");
+    recipeContainer.innerHTML = `
+    <div class="card">
+      <div class="card-body">
+        <pre class="mb-0" style="white-space: pre-wrap;">${recipeText}</pre>
+      </div>
+    </div>
+  `;
+  }
+</script>
+{% endblock %}

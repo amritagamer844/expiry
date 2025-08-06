@@ -1,0 +1,258 @@
+/* General Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+    transition: all 0.3s ease;
+}
+
+.container {
+    max-width: 1200px;
+}
+
+/* Card Styles */
+.card {
+    border-radius: 12px;
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 25px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0;
+    padding: 15px 20px;
+}
+
+/* Form Styles */
+.form-control {
+    border-radius: 8px;
+    padding: 10px 15px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.btn {
+    border-radius: 8px;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+/* Table Styles */
+.table {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.table th {
+    background-color: #f1f3f5;
+    font-weight: 600;
+}
+
+.table tr {
+    transition: background-color 0.3s ease;
+}
+
+.table tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Status Badges */
+.badge {
+    font-size: 0.85rem;
+    padding: 0.4em 0.7em;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.badge:hover {
+    transform: scale(1.05);
+}
+
+/* Footer */
+.footer {
+    margin-top: 60px;
+    padding: 25px 0;
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+
+/* Voice Input Button */
+.voice-input {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.voice-input i {
+    margin-right: 5px;
+}
+
+.voice-input:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Expiry Status */
+#expiry-status .alert {
+    margin-bottom: 0;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    animation: fadeIn 0.5s ease;
+}
+
+/* Modal Styles */
+.modal-content {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.modal-header {
+    border-radius: 12px 12px 0 0;
+    padding: 15px 20px;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+}
+
+/* Nutrition Table */
+.nutrition-info table {
+    font-size: 0.9rem;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Recipe Cards */
+.recipe-suggestions .card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.recipe-suggestions .card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.recipe-suggestions .card-img-top {
+    height: 180px;
+    object-fit: cover;
+    transition: all 0.3s ease;
+}
+
+.recipe-suggestions .card:hover .card-img-top {
+    transform: scale(1.05);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease;
+}
+
+.slide-in-up {
+    animation: slideInUp 0.5s ease;
+}
+
+/* Color scheme */
+:root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+    --light-color: #f8f9fa;
+    --dark-color: #212529;
+}
+
+/* Camera styles */
+.camera-container {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#camera-video,
+#camera-preview {
+    width: 100%;
+    height: auto;
+    background-color: #000;
+    border-radius: 8px;
+}
+
+#take-photo-btn {
+    position: relative;
+    margin: 0 auto;
+    padding: 12px 24px;
+    font-size: 1.1rem;
+}
+
+#take-photo-btn:hover {
+    transform: scale(1.05);
+}
+
+#use-photo-btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+}
